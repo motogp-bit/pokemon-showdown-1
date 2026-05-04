@@ -315,6 +315,7 @@ class Mafia extends Rooms.RoomGame<MafiaPlayer> {
 	noReveal: boolean;
 	selfEnabled: boolean | 'hammer';
 	takeIdles: boolean;
+	messages: [string, string, string, boolean][];
 
 	originalRoles: MafiaRole[];
 	originalRoleString: string;
@@ -323,6 +324,7 @@ class Mafia extends Rooms.RoomGame<MafiaPlayer> {
 
 	phase: 'signups' | 'locked' | 'IDEApicking' | 'IDEAlocked' | 'day' | 'night';
 	dayNum: number;
+	startTime: number
 
 	override timer: NodeJS.Timeout | null;
 	dlAt: number;
@@ -335,7 +337,7 @@ class Mafia extends Rooms.RoomGame<MafiaPlayer> {
 		this.playerCap = 20;
 		this.allowRenames = false;
 		this.started = false;
-
+		this.messages = [];
 		this.theme = null;
 
 		this.hostid = host.id;
@@ -373,6 +375,7 @@ class Mafia extends Rooms.RoomGame<MafiaPlayer> {
 		this.dayNum = 0;
 		this.timer = null;
 		this.dlAt = 0;
+		this.startTime = 0;	
 
 		this.IDEA = {
 			data: null,
@@ -597,6 +600,19 @@ class Mafia extends Rooms.RoomGame<MafiaPlayer> {
 		if (reset) this.distributeRoles();
 	}
 
+	createIso(playerList: string[]) {
+		let returnString = ``;
+		for (const [message, name, timestamp, vote] of this.messages) {
+			if (!name) {
+				returnString += `${message} <br/>`; //should only happen with Day X.
+			} else if (playerList.includes(name)) {
+				returnString += `${timestamp} <strong> ${vote? "": name}</strong>: ${message} <br/>`;
+			}
+		}
+		const isoHTML = `<details><summary>Iso for ${playerList.join(", ")}</summary><div role="log">${returnString}</div></details>`;
+		return isoHTML;
+	}
+
 	resetGame() {
 		if (this.playerCount > this.originalRoles.length) {
 			throw new Chat.ErrorMessage("Please set at least as many roles as there are players to run this command.");
@@ -793,6 +809,7 @@ class Mafia extends Rooms.RoomGame<MafiaPlayer> {
 			this.setDeadline(extension);
 		} else {
 			this.dayNum++;
+			this.messages.push([`<br/>Day ${this.dayNum}:`, "", "", false]);
 		}
 		if (isNaN(this.hammerCount)) {
 			this.sendDeclare(`Day ${this.dayNum}. Hammering is disabled.`);
@@ -898,16 +915,15 @@ class Mafia extends Rooms.RoomGame<MafiaPlayer> {
 		voter.lastVote = Date.now();
 
 		const name = voter.voting === 'novote' ? 'No Vote' : target?.name;
+		let message = ``;
 		if (previousVote) {
-			this.sendTimestamp(`${voter.name} has shifted their vote from ${previousVote === 'novote' ? 'No Vote' : this.getPlayer(previousVote)?.name} to ${name}`);
+			message = `${voter.name} has shifted their vote from ${previousVote === 'novote' ? 'No Vote' : this.getPlayer(previousVote)?.name} to ${name}`;
 		} else {
-			this.sendTimestamp(
-				name === 'No Vote' ?
-					`${voter.name} has abstained from voting.` :
-					`${voter.name} has voted ${name}.`
-			);
+			message = name === 'No Vote' ?`${voter.name} has abstained from voting.` :`${voter.name} has voted ${name}.`;
 		}
-
+		this.sendTimestamp(message);
+		this.messages.push([message, voter.safeName, this.formatGameTime(Date.now() - this.startTime), true]);
+		if (target) this.messages.push([message, target.safeName, this.formatGameTime(Date.now() - this.startTime), true]);
 		this.hasPlurality = null;
 		if (this.getHammerValue(targetId) <= vote.trueCount) {
 			// HAMMER
@@ -1646,6 +1662,13 @@ class Mafia extends Rooms.RoomGame<MafiaPlayer> {
 	sendTimestamp(message: string) {
 		this.room.add(`|c:|${(Math.floor(Date.now() / 1000))}|~|${message}`).update();
 	}
+	formatGameTime(ms: number) {
+		const totalSeconds = Math.floor(ms / 1000);
+		const minutes = Math.floor(totalSeconds / 60);
+		const seconds = totalSeconds % 60;
+
+		return `[${minutes}:${seconds.toString().padStart(2, "0")}]`;
+	}
 	logAction(user: User, message: string) {
 		if (user.id === this.hostid || this.cohostids.includes(user.id)) return;
 		this.room.sendModsByUser(user, `(${user.name}: ${message})`);
@@ -1834,6 +1857,7 @@ class Mafia extends Rooms.RoomGame<MafiaPlayer> {
 				return `You cannot talk at night.${staff ? " You can bypass this using /mafia nighttalk." : ''}`;
 			}
 		}
+		this.messages.push([`${message}`, player.safeName, this.formatGameTime(Date.now() - this.startTime), false]);
 	}
 
 	override onConnect(user: User) {
@@ -2605,6 +2629,7 @@ export const commands: Chat.ChatCommands = {
 				this.parse(`/mafia ${cmd}`);
 				return;
 			}
+			game.startTime = Date.now();
 			game.start(user, cmd === 'daystart');
 			game.logAction(user, `started the game`);
 		},
@@ -3181,6 +3206,23 @@ export const commands: Chat.ChatCommands = {
 		},
 		enablenlhelp: [
 			`/mafia [enablenv|disablenv] - Allows or disallows players abstain from voting. Requires host % @ # ~`,
+		],
+
+		iso: 'isolate',
+		isolate(target, room, user) {
+			room = this.requireRoom();
+			const game = this.requireGame(Mafia);
+			if (!game) throw new Chat.ErrorMessage(`No game detected`);
+			if (!target) throw new Chat.ErrorMessage(`No valid targets for iso.`);
+			const targets = target.split(",").map(s => s.trim());
+			if (targets.length > 5) throw new Chat.ErrorMessage(`Too many targets.`); 
+			//safeguard in case the html gets too large, can be removed if unneecessary
+			const iso = game.createIso(targets);
+			this.sendReplyBox(iso);
+
+		},
+		isohelp: [
+			`/mafia iso [player1, player2...] - Isolates the messages of a list of players`
 		],
 
 		forcevote(target, room, user) {

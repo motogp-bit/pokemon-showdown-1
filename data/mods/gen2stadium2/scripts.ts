@@ -208,7 +208,7 @@ export const Scripts: ModdedBattleScriptsData = {
 				for (i = 0; i < hits && target.hp && pokemon.hp; i++) {
 					if (pokemon.status === 'slp' && !isSleepUsable) break;
 					move.hit = i + 1;
-					if (move.hit === hits) move.lastHit = true;
+					move.lastHit = move.hit === hits;
 					moveDamage = this.moveHit(target, pokemon, move);
 					if (moveDamage === false) break;
 					if (nullDamage && (moveDamage || moveDamage === 0 || moveDamage === undefined)) nullDamage = false;
@@ -228,10 +228,8 @@ export const Scripts: ModdedBattleScriptsData = {
 			}
 			if (move.ohko) this.battle.add('-ohko');
 
-			if (!move.negateSecondary) {
-				this.battle.singleEvent('AfterMoveSecondary', move, null, target, pokemon, move);
-				this.battle.runEvent('AfterMoveSecondary', target, pokemon, move);
-			}
+			this.battle.singleEvent('AfterMoveSecondary', move, null, target, pokemon, move);
+			this.battle.runEvent('AfterMoveSecondary', target, pokemon, move);
 			// Implementing Recoil mechanics from Stadium 2.
 			// If a pokemon caused the other to faint with a recoil move and only one pokemon remains on both sides,
 			// recoil damage will not be taken.

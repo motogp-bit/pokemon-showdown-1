@@ -93,8 +93,7 @@ export const Scripts: ModdedBattleScriptsData = {
 					return;
 				}
 			}
-			let lockedMove = this.battle.runEvent('LockMove', pokemon);
-			if (lockedMove === true) lockedMove = false;
+			const lockedMove = pokemon.getLockedMove() || pokemon.getSemiLockedMove();
 			if (
 				!lockedMove &&
 				(!pokemon.volatiles['partialtrappinglock'] || pokemon.volatiles['partialtrappinglock'].locked !== target)
@@ -199,7 +198,7 @@ export const Scripts: ModdedBattleScriptsData = {
 				return false;
 			}
 
-			if (sourceEffect) attrs += `|[from]${this.battle.dex.conditions.get(sourceEffect)}`;
+			if (sourceEffect) attrs += `|[from] ${this.battle.dex.conditions.get(sourceEffect).name}`;
 			this.battle.addMove('move', pokemon, move.name, `${target}${attrs}`);
 
 			if (!this.battle.singleEvent('Try', move, null, pokemon, target, move)) {
@@ -231,10 +230,8 @@ export const Scripts: ModdedBattleScriptsData = {
 				return true;
 			}
 
-			if (!move.negateSecondary) {
-				this.battle.singleEvent('AfterMoveSecondarySelf', move, null, pokemon, target, move);
-				this.battle.runEvent('AfterMoveSecondarySelf', pokemon, target, move);
-			}
+			this.battle.singleEvent('AfterMoveSecondarySelf', move, null, pokemon, target, move);
+			this.battle.runEvent('AfterMoveSecondarySelf', pokemon, target, move);
 			return true;
 		},
 		tryMoveHit(target, pokemon, move) {
@@ -334,7 +331,7 @@ export const Scripts: ModdedBattleScriptsData = {
 					let i: number;
 					for (i = 0; i < hits && target.hp && pokemon.hp; i++) {
 						move.hit = i + 1;
-						if (move.hit === hits) move.lastHit = true;
+						move.lastHit = move.hit === hits;
 						moveDamage = this.moveHit(target, pokemon, move);
 						if (moveDamage === false) break;
 						damage = (moveDamage || 0);
@@ -368,10 +365,8 @@ export const Scripts: ModdedBattleScriptsData = {
 
 			if (move.ohko) this.battle.add('-ohko');
 
-			if (!move.negateSecondary) {
-				this.battle.singleEvent('AfterMoveSecondary', move, null, target, pokemon, move);
-				this.battle.runEvent('AfterMoveSecondary', target, pokemon, move);
-			}
+			this.battle.singleEvent('AfterMoveSecondary', move, null, target, pokemon, move);
+			this.battle.runEvent('AfterMoveSecondary', target, pokemon, move);
 
 			return damage;
 		},

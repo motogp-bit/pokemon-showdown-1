@@ -680,11 +680,15 @@ class Mafia extends Rooms.RoomGame<MafiaPlayer> {
 
 	createIso(playerList: string[]) {
 		let returnString = ``;
-		for (const [message, name, timestamp, vote] of this.messages) {
+		for (const [message, name, timestamp, isVote] of this.messages) {
 			if (!name) {
 				returnString += `${message} <br/>`; //should only happen with Day X.
 			} else if (playerList.includes(name)) {
-				returnString += `${timestamp} <strong> ${vote? "": name}</strong>: ${message} <br/>`;
+				if (isVote) {
+					returnString += `${timestamp} ${message} <br/>`;
+				} else {
+					returnString += `${timestamp} <strong>${name}:</strong> ${message} <br/>`;
+				}
 			}
 		}
 		const isoHTML = `<details><summary>Iso for ${playerList.join(", ")}</summary><div role="log">${returnString}</div></details>`;
@@ -3290,6 +3294,7 @@ export const commands: Chat.ChatCommands = {
 			room = this.requireRoom();
 			const game = this.requireGame(Mafia);
 			if (!game) throw new Chat.ErrorMessage(`No game detected`);
+			if (!game.started) throw new Chat.ErrorMessage(`The game hasn't started yet.`)
 			if (!target) throw new Chat.ErrorMessage(`No valid targets for iso.`);
 			const targets = target.split(",").map(s => s.trim());
 			if (targets.length > 5) throw new Chat.ErrorMessage(`Too many targets.`); 

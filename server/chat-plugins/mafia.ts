@@ -400,7 +400,7 @@ class Mafia extends Rooms.RoomGame<MafiaPlayer> {
 
 	phase: 'signups' | 'locked' | 'IDEApicking' | 'IDEAlocked' | 'day' | 'night';
 	dayNum: number;
-	startTime: number
+	startTime: number;
 
 	override timer: NodeJS.Timeout | null;
 	dlAt: number;
@@ -453,7 +453,7 @@ class Mafia extends Rooms.RoomGame<MafiaPlayer> {
 		this.dayNum = 0;
 		this.timer = null;
 		this.dlAt = 0;
-		this.startTime = 0;	
+		this.startTime = 0;
 
 		this.IDEA = {
 			data: null,
@@ -682,7 +682,7 @@ class Mafia extends Rooms.RoomGame<MafiaPlayer> {
 		let returnString = ``;
 		for (const [message, name, timestamp, isVote] of this.messages) {
 			if (!name) {
-				returnString += `${message} <br/>`; //should only happen with Day X.
+				returnString += `${message} <br/>`; // should only happen with Day X.
 			} else if (playerList.includes(name)) {
 				if (isVote) {
 					returnString += `${timestamp} ${message} <br/>`;
@@ -1001,7 +1001,7 @@ class Mafia extends Rooms.RoomGame<MafiaPlayer> {
 		if (previousVote) {
 			message = `${voter.name} has shifted their vote from ${previousVote === 'novote' ? 'No Vote' : this.getPlayer(previousVote)?.name} to ${name}`;
 		} else {
-			message = name === 'No Vote' ?`${voter.name} has abstained from voting.` :`${voter.name} has voted ${name}.`;
+			message = name === 'No Vote' ? `${voter.name} has abstained from voting.` : `${voter.name} has voted ${name}.`;
 		}
 		this.sendTimestamp(message);
 		this.messages.push([message, voter.safeName, this.formatGameTime(Date.now() - this.startTime), true]);
@@ -3297,14 +3297,13 @@ export const commands: Chat.ChatCommands = {
 			if (!game.started) throw new Chat.ErrorMessage(`The game hasn't started yet.`)
 			if (!target) throw new Chat.ErrorMessage(`No valid targets for iso.`);
 			const targets = target.split(",").map(s => s.trim());
-			if (targets.length > 5) throw new Chat.ErrorMessage(`Too many targets.`); 
-			//safeguard in case the html gets too large, can be removed if unneecessary
+			if (targets.length > 5) throw new Chat.ErrorMessage(`Too many targets.`);
+			// safeguard in case the html gets too large, can be removed if unnecessary
 			const iso = game.createIso(targets);
 			this.sendReplyBox(iso);
-
 		},
 		isohelp: [
-			`/mafia iso [player1, player2...] - Isolates the messages of a list of players`
+			`/mafia iso [player1, player2...] - Isolates the messages of a list of players`,
 		],
 
 		forcevote(target, room, user) {

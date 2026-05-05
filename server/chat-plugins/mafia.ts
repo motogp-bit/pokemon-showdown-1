@@ -3294,7 +3294,7 @@ export const commands: Chat.ChatCommands = {
 			room = this.requireRoom();
 			const game = this.requireGame(Mafia);
 			if (!game) throw new Chat.ErrorMessage(`No game detected`);
-			if (!game.started) throw new Chat.ErrorMessage(`The game hasn't started yet.`)
+			if (!game.started) throw new Chat.ErrorMessage(`The game hasn't started yet.`);
 			if (!target) throw new Chat.ErrorMessage(`No valid targets for iso.`);
 			const targets = target.split(",").map(s => s.trim());
 			if (targets.length > 5) throw new Chat.ErrorMessage(`Too many targets.`);

@@ -516,6 +516,8 @@ class Mafia extends Rooms.RoomGame<MafiaPlayer> {
 		if (subIndex !== -1) this.requestedSub.splice(subIndex, 1);
 		subIndex = this.hostRequestedSub.indexOf(user.id);
 		if (subIndex !== -1) this.hostRequestedSub.splice(subIndex, 1);
+		let index = this.played.indexOf(player.id);
+		if (index > -1) this.played.splice(index, 1);
 		this.sendRoom(`${user.name} has left the game.`);
 		for (const conn of user.connections) {
 			void Chat.resolvePage(`view-mafia-${this.room.roomid}`, user, conn);
@@ -891,7 +893,7 @@ class Mafia extends Rooms.RoomGame<MafiaPlayer> {
 			this.setDeadline(extension);
 		} else {
 			this.dayNum++;
-			this.messages.push([`<br/>Day ${this.dayNum}:`, "", "", false]);
+			this.messages.push([`<br/> <strong> Day ${this.dayNum}: </strong>`, "", "", false]);
 		}
 		if (isNaN(this.hammerCount)) {
 			this.sendDeclare(`Day ${this.dayNum}. Hammering is disabled.`);
